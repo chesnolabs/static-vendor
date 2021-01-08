@@ -1796,7 +1796,7 @@ Rickshaw.Graph.Behavior.Series.Highlight = function(args) {
 	var activeLine = null;
 
 	var disabledColor = args.disabledColor || function(seriesColor) {
-		return d3.interpolateRgb(seriesColor, d3.rgb('#d8d8d8'))(0.8).toString();
+		return '#d8d8d8';
 	};
 
 	this.addHighlightEvents = function (l) {
@@ -1921,22 +1921,51 @@ Rickshaw.Graph.Behavior.Series.Toggle = function(args) {
 		var anchor = document.createElement('a');
 		anchor.innerHTML = '&#10004;';
 		anchor.classList.add('action');
+		line.element.classList.add('disabled');
 		line.element.insertBefore(anchor, line.element.firstChild);
 
 		anchor.onclick = function(e) {
-			if (line.series.disabled) {
+			var disableAll = self.legend.lines.reduce((allDisabled,line) => {
+			    if (line.element.classList.contains('disabled')) return allDisabled && true;
+			    else return false;
+			}, true);
+
+                       
+			if (disableAll) {
+				self.legend.lines.forEach(line=>line.series.disable());
 				line.series.enable();
 				line.element.classList.remove('disabled');
-			} else {
-				if (this.graph.series.filter(function(s) { return !s.disabled }).length <= 1) return;
-				line.series.disable();
-				line.element.classList.add('disabled');
+				}
+			else {
+				if (line.element.classList.contains('disabled')) {
+
+					line.series.enable();
+					line.element.classList.remove('disabled');
+				}
+				else {
+				    if (this.graph.series.filter(function(s) { return !s.disabled }).length <= 1) {
+				        self.legend.lines.forEach(line => line.series.enable());
+				    }
+					else line.series.disable();
+					line.element.classList.add('disabled');
+				}
+
 			}
+			
+
+			//if (this.graph.series.filter(function(s) { return !s.disabled }).length <= 1) return;
+				
 
 			self.graph.update();
 
 		}.bind(this);
-
+                var hideAllButton = document.getElementsByClassName('hide-all')[0];
+                hideAllButton.onclick = function(e){
+                    self.legend.lines.forEach(line => {line.series.enable();
+                        line.element.classList.add('disabled');
+                        });
+                    self.graph.update();
+                }
                 var label = line.element.getElementsByTagName('span')[0];
                 label.onclick = function(e){
 
@@ -2106,13 +2135,17 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 			if (approximateIndex == data.length - 1) approximateIndex--;
 
 			var dataIndex = Math.min(approximateIndex || 0, data.length - 1);
+			
+			for (var i = approximateIndex; i < data.length;) {
 
-			for (var i = approximateIndex; i < data.length - 1;) {
-
-				if (!data[i] || !data[i + 1]) break;
+				if (!data[i] || !data[i + 1]) {
+					dataIndex = !data[i + 1]? i: i + 1;
+					break;
+				}
 
 				if (data[i].x <= domainX && data[i + 1].x > domainX) {
 					dataIndex = Math.abs(domainX - data[i].x) < Math.abs(domainX - data[i + 1].x) ? i : i + 1;
+					
 					break;
 				}
 
@@ -2120,13 +2153,23 @@ Rickshaw.Graph.HoverDetail = Rickshaw.Class.create({
 			}
 
 			if (dataIndex < 0) dataIndex = 0;
-			var value = data[dataIndex];
-
 			var distance = Math.sqrt(
+				Math.pow(Math.abs(graph.x(data[dataIndex].x) - eventX), 2) +
+				Math.pow(Math.abs(graph.y(data[dataIndex].y + data[dataIndex].y0) - eventY), 2));;
+			var value = data.filter(item => item.x == data[dataIndex].x).reduce((minValue,value) => {
+				distance = Math.sqrt(
 				Math.pow(Math.abs(graph.x(value.x) - eventX), 2) +
-				Math.pow(Math.abs(graph.y(value.y + value.y0) - eventY), 2)
-			);
+				Math.pow(Math.abs(graph.y(value.y + value.y0) - eventY), 2));
+				var minDistance = Math.sqrt(
+				Math.pow(Math.abs(graph.x(minValue.x) - eventX), 2) +
+				Math.pow(Math.abs(graph.y(minValue.y + minValue.y0) - eventY), 2));
+ 				distance < minDistance ? true: distance = minDistance;
+				return distance < minDistance ? value : minValue;
 
+
+			});
+			
+			
 			var xFormatter = series.xFormatter || this.xFormatter;
 			var yFormatter = series.yFormatter || this.yFormatter;
 
