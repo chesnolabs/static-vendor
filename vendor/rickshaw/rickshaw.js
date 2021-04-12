@@ -3405,7 +3405,18 @@ Rickshaw.Graph.Renderer.Bar = Rickshaw.Class.create( Rickshaw.Graph.Renderer, {
 			if (series.disabled) return;
 
 			var barWidth = this.barWidth(series);
+             var showTooltip = function (evt, text) {
+              let tooltip = document.getElementById("tooltip");
+              tooltip.innerHTML = text;
+              tooltip.style.display = "block";
+              tooltip.style.left = evt.pageX + 10 + 'px';
+              tooltip.style.top = evt.pageY + 10 + 'px';
+            }
 
+            var hideTooltip = function() {
+              var tooltip = document.getElementById("tooltip");
+              tooltip.style.display = "none";
+            }
 			var nodes = vis.selectAll("path")
 				.data(series.stack.filter( function(d) { return d.y !== null } ))
 				.enter().append("svg:rect")
@@ -3413,6 +3424,9 @@ Rickshaw.Graph.Renderer.Bar = Rickshaw.Class.create( Rickshaw.Graph.Renderer, {
 				.attr("y", function(d) { return (graph.y(d.y0 + Math.abs(d.y))) * (d.y < 0 ? -1 : 1 ) })
 				.attr("width", seriesBarWidth)
 				.attr("height", function(d) { return graph.y.magnitude(Math.abs(d.y)) })
+				.attr("hoverText", function(d) { return d.hoverText })
+				.attr("onmousemove", function(d) { return `showTooltip(evt, "${d.hoverText}");` })
+				.attr("onmouseout","hideTooltip()")
 				.attr("opacity", series.opacity)
 				.attr("transform", transform);
 
