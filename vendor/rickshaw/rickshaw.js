@@ -3411,6 +3411,8 @@ Rickshaw.Graph.Renderer.Bar = Rickshaw.Class.create( Rickshaw.Graph.Renderer, {
 				.enter().append("svg:rect")
 				.attr("x", function(d) { return graph.x(d.x) + barXOffset })
 				.attr("y", function(d) { return (graph.y(d.y0 + Math.abs(d.y))) * (d.y < 0 ? -1 : 1 ) })
+				.attr("onmousemove", function(d) { return "showTooltip(evt, '"+ d.hoverText +"');" })
+				.attr("onmouseout", function(d) { return "hideTooltip();" })
 				.attr("width", seriesBarWidth)
 				.attr("height", function(d) { return graph.y.magnitude(Math.abs(d.y)) })
 				.attr("opacity", series.opacity)
